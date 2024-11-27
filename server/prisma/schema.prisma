@@ -1,0 +1,105 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String  @id @default(cuid())
+  name       String
+  email      String  @unique
+  profilePic String?
+  status     String? @default("Hey there, I'm available")
+  isOnline   Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  chats        Chat[]    @relation("UserChats")
+  messages     Message[] @relation("MessageCreatedBy") // Link messages created by the user
+  readMessages Message[] @relation("MessageReadBy") // Link messages read by the user
+  contacts     Contact[] @relation("ContactsCreatedBy") // Contacts created by the user
+  // groups      Group[]    @relation("GroupMembers")
+
+  Contact Contact[]
+}
+
+// model Group {
+//   id          String     @id @default(cuid())
+//   name        String     // Group name
+//   description String?    // Optional description for the group
+//   profilePic  String?   // Optional profile pic for the group
+
+//   members     User[]     @relation("GroupMembers") // Many-to-many relationship with User
+//   chats       Chat[]     // Associated group chats
+
+//   createdAt   DateTime   @default(now())
+//   updatedAt   DateTime   @updatedAt
+// }
+
+model Chat {
+  id               String  @id @default(cuid())
+  isGroup          Boolean
+  groupName        String?
+  groupDescription String?
+  groupProfilePic  String?
+  createdBy        String
+  members          User[]  @relation("UserChats")
+
+  messages Message[] @relation("ChatMessages") // Link messages to the chat
+
+  lastMessageId String? // Foreign key for the last message
+  lastMessage   Message? @relation("LastMessageInChat", fields: [lastMessageId], references: [id])
+
+  unseenMsgCount Int @default(0) // Count of unseen messages
+
+  // groupId        String?   // Foreign key for Group (for group chats)
+  // group          Group?    @relation(fields: [groupId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Message {
+  id        String  @id @default(cuid())
+  chatId    String // Foreign key to the Chat table
+  createdBy String // User ID of the message creator
+  readBy    User[]  @relation("MessageReadBy") // Users who have read the message
+  text      String?
+  emojie    String?
+  image     String?
+  audio     String?
+  video     String?
+  gif       String?
+
+  chat    Chat @relation("ChatMessages", fields: [chatId], references: [id]) // Define the relationship with Chat
+  creator User @relation("MessageCreatedBy", fields: [createdBy], references: [id]) // Define the relationship with User
+
+  lastMessageInChat Chat[] @relation("LastMessageInChat")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Contact {
+  id          String @id @default(cuid())
+  name        String
+  email       String @unique
+  userId      String // Foreign key to the User table for the contact owner
+  createdById String // Foreign key to the User table for the user who created the contact
+
+  user      User @relation(fields: [userId], references: [id]) // The contact's associated user
+  createdBy User @relation("ContactsCreatedBy", fields: [createdById], references: [id]) // The user who created the contact
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
