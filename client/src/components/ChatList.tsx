@@ -94,8 +94,12 @@ const ChatList = () => {
   ];
   const [chats, setChats] = useState<Chat[]>([]);
   const getChats = async () => {
-    const { data } = await axiosInstance.get(`/chat?email=${user?.email}`);
-    setChats(data);
+    try {
+      const { data } = await axiosInstance.get(`/chat?email=${user?.email}`);
+      setChats(data);
+    } catch (error) {
+      console.log("getChats() ->>", error);
+    }
   };
   useEffect(() => {
     getChats();
@@ -177,7 +181,7 @@ const ChatList = () => {
       setEmailError("");
       getChats();
     } catch (error) {
-      console.log(error);
+      console.log("addToContact() ->>", error);
     }
   };
 
@@ -201,7 +205,6 @@ const ChatList = () => {
       const dataUri = URL.createObjectURL(file);
       setImage(file);
       setImagePreview(dataUri);
-      console.log(dataUri, "dataUri");
     }
   };
 
@@ -244,7 +247,7 @@ const ChatList = () => {
       setImagePreview("");
       setGroupNameError("");
     } catch (error) {
-      console.log("Error creating group chat:", error);
+      console.log("handleCreateGroupChat() ->>", error);
     }
   };
 

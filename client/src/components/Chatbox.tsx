@@ -10,13 +10,19 @@ const Chatbox = ({ id }: { id: string | null }) => {
   const { user } = useAuth();
 
   const [chatData, setChatData] = useState(null);
-  useEffect(() => {
-    const getChatData = async () => {
+
+  // get chat data
+  const getChatData = async () => {
+    try {
       const { data } = await axiosInstance.get(
         `/chat/${id}?userId=${user?.uid}`
       );
       setChatData(data);
-    };
+    } catch (error) {
+      console.log("getChatData() ->>", error);
+    }
+  };
+  useEffect(() => {
     if (id) {
       getChatData();
     }

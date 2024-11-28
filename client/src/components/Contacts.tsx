@@ -28,7 +28,7 @@ function Contact({
       const res = await axiosInstance.get(`/contact?email=${user?.email}`);
       setContacts(res.data);
     } catch (error) {
-      console.log(error);
+      console.log("getContacts() ->>", error);
     }
   }, []);
 
@@ -46,7 +46,7 @@ function Contact({
       getChats();
       navigate(`/chat/${chat.data.id}`);
     } catch (error) {
-      console.log(error);
+      console.log("createChat() ->>", error);
     }
   };
 

@@ -6,7 +6,6 @@ import { Chat } from "@/lib/types";
 import { IoMdContact } from "react-icons/io";
 
 const ChatHeader = ({ chatData }: { chatData: Chat | null }) => {
-  console.log(chatData, "chatData");
   return (
     <div className="h-[10%] flex justify-between items-center p-5">
       <div className="flex items-center gap-3">
@@ -22,7 +21,7 @@ const ChatHeader = ({ chatData }: { chatData: Chat | null }) => {
           <IoMdContact className="text-5xl dark:fill-dark-tertiary fill-light-tertiary" />
         )}
         <h5 className="dark:text-light-primary text-dark-primary">
-          {chatData?.member?.name || ""}
+          {chatData?.member?.name || chatData?.groupName}
         </h5>
       </div>
       <div className="flex items-center gap-5">
