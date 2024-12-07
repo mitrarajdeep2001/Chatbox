@@ -6,6 +6,7 @@ import {
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { User, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { isDate } from "util/types";
 
 export const saveUserData = async (user: User, name: string) => {
   try {
@@ -72,3 +73,24 @@ export const signOutUser = async () => {
     console.error("Error signing out:", error);
   }
 };
+
+// format time with am/pm
+export function formatTimeWithAmPm(timestamp: number) {
+  // Parse the timestamp into a Date object
+  const date = new Date(Number(timestamp));
+
+  // Extract hours and minutes
+  let hours = date.getHours();
+  const minutes = date.getMinutes();
+  const ampm = hours >= 12 ? "PM" : "AM";
+
+  // Convert hours to 12-hour format
+  hours = hours % 12;
+  hours = hours ? hours : 12; // Replace '0' with '12'
+
+  // Format minutes to always be two digits
+  const formattedMinutes = minutes.toString().padStart(2, "0");
+
+  // Return the formatted time
+  return `${hours}:${formattedMinutes} ${ampm}`;
+}

@@ -1,0 +1,67 @@
+import { Server } from "socket.io";
+import { pub, sub } from "./redis";
+import prisma from "./prisma";
+import createMessage from "../helper/kafkaMessageHandlers";
+import { produceMessage } from "./kafka";
+
+class SocketService {
+  private _io: Server;
+  constructor() {
+    console.log("Init Socket Service...");
+    this._io = new Server({
+      cors: {
+        allowedHeaders: ["*"],
+        origin: "*",
+        methods: ["GET", "POST"],
+      },
+    });
+    sub.subscribe("MESSAGES");
+  }
+
+  // Listen for socket events
+  public initListeners() {
+    const io = this._io;
+    console.log("Init Socket Listeners...");
+    io.on("connect", (socket) => {
+      console.log("New socket connected", socket.id);
+      // Join chat room based on user IDs
+      socket.on("event:joinRoom", ({ roomId }) => {
+        socket.join(roomId);
+        console.log(`User ${socket.id} joined room ${roomId}`);
+      });
+      // Send message to room
+      socket.on("event:message", async ({ message, roomId, createdBy }) => {
+        console.log("New message received", message);
+        // Publish the message to the redis channel
+        const payload = { message, roomId, createdBy };
+        await pub.publish("MESSAGES", JSON.stringify(payload));
+      });
+      // Handle disconnect
+      socket.on("disconnect", () => {
+        console.log("Socket disconnected", socket.id);
+      });
+    });
+
+    // Redis subscriber handling messages for all rooms
+    sub.on("message", async (channel, message) => {
+      if (channel === "MESSAGES") {
+        const { roomId, createdBy, message: chatMessage } = JSON.parse(message);
+        console.log(`New message received for room ${roomId} from Redis`);
+
+        // Emit the message to the correct room on this instance
+        io.to(roomId).emit("message", JSON.stringify(chatMessage));
+        // Send the message to the kafka
+        await produceMessage("MESSAGES", {
+          roomId,
+          createdBy,
+          message: chatMessage,
+        });
+      }
+    });
+  }
+  get io() {
+    return this._io;
+  }
+}
+
+export default SocketService;

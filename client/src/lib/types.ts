@@ -6,6 +6,7 @@ export type Member = {
 };
 
 export type Message = {
+  chatId: string;
   createdBy: string;
   createdAt: string;
   text?: string | null;

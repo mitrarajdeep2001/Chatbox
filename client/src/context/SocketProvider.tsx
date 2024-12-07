@@ -1,100 +1,105 @@
-"use client";
-
-import { useUser } from "@auth0/nextjs-auth0/client";
 import React, {
   createContext,
-  useCallback,
   useContext,
   useEffect,
-  useState,
+  useCallback,
+  useRef,
 } from "react";
-import { io, Socket } from "socket.io-client";
+import { Socket } from "socket.io-client";
+import { useAuth } from "./AuthProvider";
+import { disconnectSocket, initializeSocket } from "@/lib/socketService";
 
 interface SocketProviderProps {
   children: React.ReactNode;
 }
 
 interface ISocketContext {
-  sendMessage: (message: object) => any;
-  messages: {
-    text?: string;
-    img?: string;
-    audio?: string;
-    video?: string;
-    gif?: string;
-  }[];
-  setMessages: React.Dispatch<
-    React.SetStateAction<
-      {
-        text?: string;
-        img?: string;
-        audio?: string;
-        video?: string;
-        gif?: string;
-      }[]
-    >
-  >;
+  joinRoom: (roomId: string) => void;
+  emitEvent: (event: string, data: any) => void;
+  listenToEvent: (event: string, callback: (data: any) => void) => void;
+  socket: Socket | null;
 }
 
 const SocketContext = createContext<ISocketContext | null>(null);
 
 export const useSocket = () => {
-  const socket = useContext(SocketContext);
-  if (!socket) {
+  const context = useContext(SocketContext);
+  if (!context) {
     throw new Error("useSocket must be used within a SocketProvider");
   }
-  return socket;
+  return context;
 };
 
 const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
-  const { user, error, isLoading } = useUser();
-  console.log(user, "user in socket");
-
-  const [socket, setSocket] = useState<Socket>();
-  const [messages, setMessages] = useState<
-    {
-      text?: string;
-      img?: string;
-      audio?: string;
-      video?: string;
-      gif?: string;
-    }[]
-  >([]);
-  const sendMessage: ISocketContext["sendMessage"] = useCallback(
-    (message) => {
-      if (!socket) return;
-      socket.emit("event:message", {
-        message,
-        roomId: "cm2r8h95l0002t3zcuuk155hr",
-        createdBy: user?.email,
-      });
-    },
-    [socket, user?.email]
-  );
-
-  const onMessageReceived = useCallback((message: string) => {
-    console.log(message, "message from server");
-    setMessages((prevMessages) => [...prevMessages, JSON.parse(message)]);
-  }, []);
+  const { user } = useAuth();
+  const socketRef = useRef<Socket | null>(null);
+  socketRef.current = initializeSocket(import.meta.env.VITE_SOCKET_URL);
 
   useEffect(() => {
-    const _socket = io("http://localhost:5000", {
-      transports: ["websocket"],
-    });
-    setSocket(_socket);
-    _socket.emit("event:joinRoom", { roomId: "cm2r8h95l0002t3zcuuk155hr" });
-    _socket.on("message", (message) => {
-      onMessageReceived(message);
-    });
+    if (user?.uid) {
+      joinRoom(user?.uid);
+    }
+
+    // socketRef.current?.on("event:newMessage", (message) => {
+    //   console.log("New message:", message);
+    // });
+    // Cleanup on unmount
     return () => {
-      _socket.off("message", onMessageReceived);
-      _socket.disconnect();
-      setSocket(undefined);
+      disconnectSocket();
+      socketRef.current = null;
     };
-  }, []);
+  }, [user?.uid, socketRef.current]); // Dependency to reinitialize socket if user changes
+
+  // Emit a custom event
+  const emitEvent = useCallback(
+    (event: string, data: any) => {
+      if (!socketRef.current) {
+        console.error("Socket is not connected");
+        return;
+      }
+      socketRef.current.emit(event, data);
+    },
+    [socketRef.current]
+  );
+
+  // Listen to a custom event
+  const listenToEvent = useCallback(
+    (event: string, callback: (data: any) => void) => {
+      if (!socketRef.current) {
+        console.error("Socket is not connected");
+        return;
+      }
+      socketRef.current.on(event, callback);
+
+      return () => {
+        socketRef.current?.off(event, callback); // Cleanup listener on unmount
+      };
+    },
+    [socketRef.current]
+  );
+
+  // Join a room
+  const joinRoom = useCallback(
+    (roomId: string) => {
+      if (!socketRef.current) {
+        console.error("Socket is not connected");
+        return;
+      }
+      socketRef.current.emit("event:joinRoom", { roomId });
+      console.log(`Joined room: ${roomId}`);
+    },
+    [socketRef.current]
+  );
 
   return (
-    <SocketContext.Provider value={{ sendMessage, messages, setMessages }}>
+    <SocketContext.Provider
+      value={{
+        joinRoom,
+        emitEvent,
+        listenToEvent,
+        socket: socketRef.current,
+      }}
+    >
       {children}
     </SocketContext.Provider>
   );

@@ -6,6 +6,8 @@ import { Chat } from "@/lib/types";
 import { IoMdContact } from "react-icons/io";
 
 const ChatHeader = ({ chatData }: { chatData: Chat | null }) => {
+  console.log(chatData?.member?.profilePic);
+
   return (
     <div className="h-[10%] flex justify-between items-center p-5">
       <div className="flex items-center gap-3">

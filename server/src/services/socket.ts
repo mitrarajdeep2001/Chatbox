@@ -1,13 +1,26 @@
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 import { pub, sub } from "./redis";
 import prisma from "./prisma";
-import createMessage from "../helper/kafkaMessageHandlers";
 import { produceMessage } from "./kafka";
+import createMessage from "../helper/kafkaMessageHandlers"; // Example helper
+import { Message } from "../types";
+
+interface SocketEventPayload {
+  roomId: string;
+  message: Message;
+}
+
+type EventHandler = (
+  socket: Socket,
+  roomId: string,
+  payload: any
+) => Promise<void>;
 
 class SocketService {
   private _io: Server;
+
   constructor() {
-    console.log("Init Socket Service...");
+    console.log("Initializing Socket Service...");
     this._io = new Server({
       cors: {
         allowedHeaders: ["*"],
@@ -15,54 +28,94 @@ class SocketService {
         methods: ["GET", "POST"],
       },
     });
+
+    // Subscribe to Redis channels
     sub.subscribe("MESSAGES");
   }
-  // Helper to create a unique chat room ID for two users
-  private createRoomId(userIds: string[]): string {
-    return userIds.sort().join("_");
-  }
-  // Listen for socket events
-  public initListeners() {
+
+  // Initialize all listeners
+  public initListeners(): void {
+    console.log("Initializing Socket Listeners...");
     const io = this._io;
-    console.log("Init Socket Listeners...");
-    io.on("connect", (socket) => {
-      console.log("New socket connected", socket.id);
-      // Join chat room based on user IDs
-      socket.on("event:joinRoom", ({ roomId }) => {
-        // const roomId = this.createRoomId(userIds);
-        socket.join(roomId);
-        console.log(`User ${socket.id} joined room ${roomId}`);
-      });
-      // Send message to room
-      socket.on("event:message", async ({ message, roomId, createdBy }) => {
-        console.log("New message received", message);
-        // const roomId = this.createRoomId(userIds);
-        // Publish the message to the redis channel
-        // console.log(message, roomId, createdBy, "message, roomId, createdBy");
-        
-        const payload = { message, roomId, createdBy };
-        await pub.publish("MESSAGES", JSON.stringify(payload));
-      });
-      // Handle disconnect
+
+    io.on("connection", (socket: Socket) => {
+      console.log("New socket connected:", socket.id);
+
+      // Generalized event handler
+      this.registerEvent(socket, "event:joinRoom", this.handleJoinRoom);
+      this.registerEvent(socket, "event:sendMessage", this.handleMessage);
+
       socket.on("disconnect", () => {
-        console.log("Socket disconnected", socket.id);
+        console.log("Socket disconnected:", socket.id);
       });
     });
 
-    // Redis subscriber handling messages for all rooms
-    sub.on("message", async (channel, message) => {
-      if (channel === "MESSAGES") {
-        const { roomId, createdBy, message: chatMessage } = JSON.parse(message);
-        console.log(`New message received for room ${roomId} from Redis`);
+    // Listen for Redis events
+    this.initRedisListeners();
+  }
 
-        // Emit the message to the correct room on this instance
-        io.to(roomId).emit("message", JSON.stringify(chatMessage));
-        // Send the message to the kafka
-        await produceMessage("MESSAGES", { roomId, createdBy, message: chatMessage });
+  // Register a specific event and its handler
+  private registerEvent(
+    socket: Socket,
+    eventName: string,
+    handler: EventHandler
+  ): void {
+    socket.on(eventName, async (payload) => {
+      try {
+        console.log(`Event received: ${eventName}`, payload);
+        await handler(socket, payload.roomId, payload);
+      } catch (error) {
+        console.error(`Error handling event "${eventName}":`, error);
+        // socket.emit("error", { event: eventName, error: error.message });
       }
     });
   }
-  get io() {
+
+  // Redis subscriber for cross-instance message handling
+  private initRedisListeners(): void {
+    sub.on("message", async (channel: string, message: string) => {
+      if (channel === "MESSAGES") {
+        const parsedMessage = JSON.parse(message) as Message;
+
+        const { chatId } = parsedMessage;
+
+        console.log(`New Redis message for room ${chatId}:`, message);
+
+        // Emit to the correct room
+        // this._io.to(chatId).emit("event:newMessage", message);
+
+        // Send message to Kafka for further processing
+        await produceMessage("MESSAGES", message);
+      }
+    });
+  }
+
+  // Handle join room event
+  private async handleJoinRoom(
+    socket: Socket,
+    roomId: string,
+    payload: SocketEventPayload
+  ): Promise<void> {
+    socket.join(roomId);
+    console.log(`Socket ${socket.id} joined room: ${roomId}`);
+  }
+
+  // Handle send message event
+  private async handleMessage(
+    socket: Socket,
+    roomId: string,
+    payload: any
+  ): Promise<void> {
+    console.log(`New message for room ${payload.chatId}:`, payload);
+    socket.to(payload.chatId).emit("event:newMessage", payload);
+    // Publish to Redis for cross-instance communication
+    await pub.publish("MESSAGES", JSON.stringify(payload));
+  }
+
+  // Add new handlers here as needed...
+
+  // Getter for the server instance
+  public get io(): Server {
     return this._io;
   }
 }

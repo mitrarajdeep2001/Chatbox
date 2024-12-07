@@ -14,7 +14,7 @@ const init = () => {
   const server = http.createServer(app); // Use Express app with HTTP server
   socketService.io.attach(server); // Attach Socket.io to the server
 
-  const PORT = process.env.PORT || 5000;
+  const PORT = process.env.PORT || 3000;
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
