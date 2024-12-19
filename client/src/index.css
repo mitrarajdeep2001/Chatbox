@@ -4,8 +4,88 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bg-secondary: #f3f3f3; /* Light background */
+  --text-primary: #2c2c2c; /* Dark text */
+  --bg-hover: #e5e5e5; /* Hover effect */
+}
+
+.dark {
+  --bg-secondary: #202020; /* Dark background */
+  --text-primary: #fcfcfc; /* Light text */
+  --bg-hover: #515151; /* Hover effect in dark mode */
+}
+
 svg {
   @apply dark:text-light-primary text-dark-primary text-[20px];
+}
+
+.gif-main-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 500px;
+  height: 500px;
+  border-radius: 20px; /* Rounded corners */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow */
+  padding: 20px; /* Padding inside the box */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  overflow: hidden;
+  @apply dark:bg-dark-secondary bg-light-secondary;
+}
+
+.gif-container {
+  flex-grow: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  width: 100%;
+}
+
+.gif-input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  outline: none;
+  @apply dark:bg-dark-primary bg-light-primary dark:text-light-primary text-dark-primary;
+}
+
+/* Apply custom scrollbar styles */
+/* Apply custom scrollbar styles */
+.rounded-scrollbar {
+  scrollbar-width: thin; /* For Firefox: Slim scrollbar */
+  scrollbar-color: #4caf50 #e0e0e0; /* For Firefox: Thumb color and track color */
+}
+
+/* Webkit-based browsers (Chrome, Edge, Safari) */
+.rounded-scrollbar::-webkit-scrollbar {
+  width: 10px; /* Width of vertical scrollbar */
+  height: 10px; /* Height of horizontal scrollbar */
+}
+
+.rounded-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #4caf50; /* Thumb color */
+  border-radius: 50px; /* Fully rounded scrollbar thumb */
+  border: 2px solid #e0e0e0; /* Padding effect around the thumb */
+}
+
+.rounded-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #388e3c; /* Darker color for thumb on hover */
+}
+
+.rounded-scrollbar::-webkit-scrollbar-track {
+  background: #e0e0e0; /* Track color */
+  border-radius: 50px; /* Fully rounded scrollbar track */
+  margin: 2px; /* Optional: Space around the scrollbar */
+}
+
+.rounded-scrollbar::-webkit-scrollbar-track:hover {
+  background: #d6d6d6; /* Slightly darker track on hover */
 }
 
 .btn-loader {

@@ -21,7 +21,7 @@ const MainLayout = () => {
                 <Outlet /> {/* Where nested routes will render */}
               </div>
             </div>
-            <ReactQueryDevtools initialIsOpen={false} />
+            {/* <ReactQueryDevtools initialIsOpen={false} /> */}
           </QueryClientProvider>
         </SocketProvider>
       </AuthProvider>

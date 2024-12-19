@@ -29,13 +29,11 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({
           left: "35%",
           transform: "translate(-50%, -50%)",
           borderRadius: "10px",
-          // boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-          // opacity: 0.8,
         }}
       >
         <Picker
           onEmojiSelect={onEmojiSelect}
-          theme={theme} // or "light"
+          theme={theme} // "dark" or "light"
         />
       </div>
     </Modal>

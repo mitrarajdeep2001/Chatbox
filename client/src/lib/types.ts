@@ -8,9 +8,9 @@ export type Member = {
 export type Message = {
   chatId: string;
   createdBy: string;
-  createdAt: string;
+  createdAt: number;
   text?: string | null;
-  img?: string | null;
+  image?: string | null;
   audio?: string | null;
   video?: string | null;
   gif?: string | null;

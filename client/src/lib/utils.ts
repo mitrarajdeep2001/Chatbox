@@ -94,3 +94,54 @@ export function formatTimeWithAmPm(timestamp: number) {
   // Return the formatted time
   return `${hours}:${formattedMinutes} ${ampm}`;
 }
+
+export function debounce<T extends (...args: any[]) => void>(
+  func: T,
+  delay: number
+): (...args: Parameters<T>) => void {
+  let timerId: ReturnType<typeof setTimeout>;
+
+  return function (...args: Parameters<T>): void {
+    clearTimeout(timerId);
+    timerId = setTimeout(() => {
+      func(...args);
+    }, delay);
+  };
+}
+
+export function getMediaFileDataUri(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (
+      !file.type.startsWith("video/") &&
+      !file.type.startsWith("audio/") &&
+      !file.type.startsWith("image/")
+    ) {
+      reject(new Error("The provided file is not a video."));
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      if (reader.result) {
+        resolve(reader.result as string);
+      } else {
+        reject(new Error("Failed to convert the file to a data URI."));
+      }
+    };
+
+    reader.onerror = () => {
+      reject(new Error("An error occurred while reading the file."));
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
+export const formatTime = (time: number): string => {
+  const minutes = Math.floor(time / 60);
+  const seconds = Math.floor(time % 60);
+  return `${minutes.toString().padStart(2, "0")}:${seconds
+    .toString()
+    .padStart(2, "0")}`;
+};
