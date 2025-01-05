@@ -26,7 +26,7 @@ const init = () => {
   ): void => {
     const allowedOrigins = [
       process.env.CLIENT_BASE_URL,
-      "https://another-origin.com",
+      "http://localhost:5173",
     ]; // Define allowed origins
     const origin = req.headers.origin as string;
 

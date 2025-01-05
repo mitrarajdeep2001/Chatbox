@@ -1,13 +1,13 @@
 import { useSocket } from "@/context/SocketProvider";
 import { Message } from "@/lib/types";
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+// import { useParams } from "react-router-dom";
 import MessageBody from "./MessageBody";
 import { useLocalState } from "@/lib/hooks";
 
 const ChatBody = ({ chatData }: { chatData: object | null }) => {
-  const { id: chatId } = useParams(); // Chat ID from route params
-  const { listenToEvent, emitEvent, socket } = useSocket(); // Access socket methods
+  // const { id: chatId } = useParams(); // Chat ID from route params
+  const { listenToEvent } = useSocket(); // Access socket methods
   const [messages, setMessages] = useState<any[]>([]); // State to store messages
   const { state: message } = useLocalState("message");
   const scrollRef = useRef<HTMLDivElement>(null); // Ref for auto-scrolling

@@ -25,8 +25,11 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-icons": "^5.3.0",
+    "react-player": "^2.16.0",
     "react-router-dom": "^6.28.0",
+    "simple-peer": "^9.11.1",
     "socket.io-client": "^4.8.1",
+    "vite-plugin-node-polyfills": "^0.22.0",
     "wavesurfer.js": "^7.8.11"
   },
   "devDependencies": {
@@ -34,6 +37,7 @@
     "@types/node": "^22.9.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "@types/simple-peer": "^9.11.8",
     "@vitejs/plugin-react-swc": "^3.5.0",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.13.0",

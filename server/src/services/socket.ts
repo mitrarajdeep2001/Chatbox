@@ -13,6 +13,7 @@ interface SocketEventPayload {
 type EventHandler = (
   socket: Socket,
   roomId: string,
+  event: string,
   payload: any
 ) => Promise<void>;
 
@@ -44,7 +45,20 @@ class SocketService {
       // Generalized event handler
       this.registerEvent(socket, "event:joinRoom", this.handleJoinRoom);
       this.registerEvent(socket, "event:sendMessage", this.handleMessage);
+      this.registerEvent(socket, "event:callUser", this.handleGenericEvents);
+      this.registerEvent(socket, "event:answerCall", this.handleGenericEvents);
+      this.registerEvent(
+        socket,
+        "event:iceCandidate",
+        this.handleGenericEvents
+      );
+      this.registerEvent(
+        socket,
+        "event:negotiationNeeded",
+        this.handleGenericEvents
+      );
 
+      // Handle disconnection
       socket.on("disconnect", () => {
         console.log("Socket disconnected:", socket.id);
       });
@@ -63,7 +77,22 @@ class SocketService {
     socket.on(eventName, async (payload) => {
       try {
         console.log(`Event received: ${eventName}`, payload);
-        await handler(socket, payload.roomId, payload);
+        // Handle the event using the provided handler
+        if (eventName === "event:joinRoom") {
+          await handler(socket, payload.roomId, "", payload);
+        } else if (eventName === "event:sendMessage") {
+          await handler(socket, payload.roomId, "event:newMessage", payload);
+        } else if (eventName === "event:callUser") {
+          await handler(socket, payload.roomId, "event:incomingCall", payload);
+        } else if (eventName === "event:answerCall") {
+          await handler(socket, payload.roomId, "event:callAccepted", payload);
+        } else if (eventName === "event:negotiationNeeded") {
+          await handler(socket, payload.roomId, "event:negotiate", payload);
+        } else if (eventName === "event:negotiate") {
+          await handler(socket, payload.roomId, "event:callAccepted", payload);
+        } else if (eventName === "event:iceCandidate") {
+          await handler(socket, payload.roomId, "event:iceCandidate", payload);
+        } 
       } catch (error) {
         console.error(`Error handling event "${eventName}":`, error);
         // socket.emit("error", { event: eventName, error: error.message });
@@ -94,6 +123,7 @@ class SocketService {
   private async handleJoinRoom(
     socket: Socket,
     roomId: string,
+    event: string,
     payload: SocketEventPayload
   ): Promise<void> {
     socket.join(roomId);
@@ -104,15 +134,26 @@ class SocketService {
   private async handleMessage(
     socket: Socket,
     roomId: string,
+    event: string,
     payload: any
   ): Promise<void> {
     console.log(`New message for room ${payload.chatId}:`, payload);
-    socket.to(payload.chatId).emit("event:newMessage", payload);
+    socket.to(payload.chatId).emit(event, payload);
     // Publish to Redis for cross-instance communication
     await pub.publish("MESSAGES", JSON.stringify(payload));
   }
 
-  // Add new handlers here as needed...
+  // Handler send offer
+  private async handleGenericEvents(
+    socket: Socket,
+    roomId: string,
+    event: string,
+    payload: any
+  ): Promise<void> {
+    console.log(`New event (${event}) for room ${roomId}:`, payload);
+
+    socket.to(roomId).emit(event, { ...payload, from: socket.id });
+  }
 
   // Getter for the server instance
   public get io(): Server {

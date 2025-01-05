@@ -39,10 +39,6 @@ const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     if (user?.uid) {
       joinRoom(user?.uid);
     }
-
-    // socketRef.current?.on("event:newMessage", (message) => {
-    //   console.log("New message:", message);
-    // });
     // Cleanup on unmount
     return () => {
       disconnectSocket();

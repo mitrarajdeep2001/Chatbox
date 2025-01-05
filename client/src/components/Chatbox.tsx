@@ -6,11 +6,14 @@ import Logo from "./svgs/Logo";
 import axiosInstance from "@/lib/axiosInstance";
 import { useAuth } from "@/context/AuthProvider";
 import { useSocket } from "@/context/SocketProvider";
-import { getSocket } from "@/lib/socketService";
+import Stream from "./Stream";
+import { useWebRTC } from "@/context/WebRTCProvider";
 
 const Chatbox = ({ id }: { id: string | null }) => {
   const { user } = useAuth();
-  const { joinRoom, socket } = useSocket();
+  const { joinRoom } = useSocket();
+    const { myStream, remoteStream } = useWebRTC();
+
   const [chatData, setChatData] = useState(null);
 
   // get chat data
@@ -32,22 +35,28 @@ const Chatbox = ({ id }: { id: string | null }) => {
   }, [id]);
 
   return (
-    <div className="w-[70%] flex flex-col justify-between h-screen">
-      {typeof id === "string" ? (
-        <>
-          <ChatHeader chatData={chatData} />
-          <ChatBody chatData={chatData} />
-          <ChatFooter chatData={chatData} />
-        </>
-      ) : (
-        <div className="flex flex-col justify-center items-center h-screen">
-          <Logo width={200} height={200} />
-          <h4 className="text-3xl font-bold dark:text-light-primary text-dark-primary">
-            ChatBox
-          </h4>
-        </div>
-      )}
-    </div>
+    <>
+      <Stream
+        myStream={myStream}
+        remoteStream={remoteStream}
+      />
+      <div className="w-[70%] flex flex-col justify-between h-screen">
+        {typeof id === "string" ? (
+          <>
+            <ChatHeader chatData={chatData} />
+            <ChatBody chatData={chatData} />
+            <ChatFooter chatData={chatData} />
+          </>
+        ) : (
+          <div className="flex flex-col justify-center items-center h-screen">
+            <Logo width={200} height={200} />
+            <h4 className="text-3xl font-bold dark:text-light-primary text-dark-primary">
+              ChatBox
+            </h4>
+          </div>
+        )}
+      </div>
+    </>
   );
 };
 
