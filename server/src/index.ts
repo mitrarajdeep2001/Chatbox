@@ -5,7 +5,8 @@ import dotenv from "dotenv";
 dotenv.config();
 import router from "./routes/index";
 import { consumeMessages } from "./services/kafka";
-import { Request, Response, NextFunction } from "express";
+import cors from "cors"
+
 
 const init = () => {
   const app = express(); // Initialize Express app
@@ -19,42 +20,21 @@ const init = () => {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
-  const customCors = (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): void => {
-    const allowedOrigins = [
-      process.env.CLIENT_BASE_URL,
-      "http://localhost:5173",
-    ]; // Define allowed origins
-    const origin = req.headers.origin as string;
-
-    if (allowedOrigins.includes(origin)) {
-      res.setHeader("Access-Control-Allow-Origin", origin); // Allow requests from the specific origin
-    }
-
-    // Set other CORS headers
-    res.setHeader(
-      "Access-Control-Allow-Methods",
-      "GET, POST, PUT, DELETE, OPTIONS"
-    ); // Allow specific methods
-    res.setHeader(
-      "Access-Control-Allow-Headers",
-      "Content-Type, Authorization"
-    ); // Allow specific headers
-    res.setHeader("Access-Control-Allow-Credentials", "true"); // Allow cookies
-
-    // If the request is an OPTIONS request (pre-flight), respond with 200 status
-    if (req.method === "OPTIONS") {
-      res.sendStatus(200);
-    }
-
-    next();
-  };
-
-  // Use the custom CORS middleware
-  app.use(customCors);
+  // Use the CORS middleware
+  app.use(
+    cors({
+      origin: `${process.env.CLIENT_BASE_URL}`,
+      methods: ["GET", "POST", "DELETE", "PUT"],
+      allowedHeaders: [
+        "Content-Type",
+        "Authorization",
+        "Cache-Control",
+        "Expires",
+        "Pragma",
+      ],
+      credentials: true,
+    })
+  );
 
   // Example route (optional)
   app.get("/", (req, res) => {

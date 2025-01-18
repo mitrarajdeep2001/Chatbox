@@ -1,0 +1,87 @@
+version: '3.9' # Use a more specific version
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - app-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - app-network
+
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin@password
+      POSTGRES_DB: primaryDb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  redis-stack:
+    image: redis/redis-stack:latest
+    container_name: redis-stack
+    ports:
+      - "6379:6379"
+    command: [ "redis-server", "--protected-mode", "no", "--bind", "0.0.0.0", "--save", "60", "1", "--loglevel", "warning" ]
+    networks:
+      - app-network
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: client
+    ports:
+      - "5173:5173"
+    env_file:
+      - ./client/.env
+
+    networks:
+      - app-network
+
+  server:
+    build:
+      context: ./server
+      dockerfile: ./Dockerfile
+    container_name: server
+    ports:
+      - "3000:3000"
+      - "5555:5555" # Map and expose port 5555 for Prisma Studio
+    env_file:
+      - ./server/.env
+    networks:
+      - app-network
+    depends_on:
+      - postgres
+      - redis-stack
+      - kafka
+
+volumes:
+  postgres-data:
+
+networks:
+  app-network:
+    driver: bridge
