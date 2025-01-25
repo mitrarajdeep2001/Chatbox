@@ -14,7 +14,7 @@ const init = () => {
   const server = http.createServer(app); // Use Express app with HTTP server
   socketService.io.attach(server); // Attach Socket.io to the server
 
-  const PORT = process.env.PORT || 3000;
+  const PORT = process.env.PORT || 3003;
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
@@ -25,6 +25,7 @@ const init = () => {
     next: NextFunction
   ): void => {
     const allowedOrigins = [
+      "*", // Allow all origins
       process.env.CLIENT_BASE_URL,
       "http://localhost:5173",
     ]; // Define allowed origins
