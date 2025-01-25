@@ -60,7 +60,7 @@ export const signUp = async (name: string, email: string, password: string) => {
 
 export const signIn = async (email: string, password: string) => {
   try {
-    await signInWithEmailAndPassword(auth, email, password);
+     await signInWithEmailAndPassword(auth, email, password);
   } catch (error) {
     console.error("Error signing in:", error);
   }

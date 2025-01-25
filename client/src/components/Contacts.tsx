@@ -41,7 +41,7 @@ function Contact({
     try {
       const chat = await axiosInstance.post("/chat", {
         isGroup: false,
-        members: [user?.email, email],
+        members: JSON.stringify([user?.email, email]),
       });
       getChats();
       navigate(`/chat/${chat.data.id}`);
