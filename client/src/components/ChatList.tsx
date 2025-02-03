@@ -1,7 +1,7 @@
 import { Box, Button, IconButton, Modal } from "@mui/material";
 import { IoCreateOutline, IoFilter } from "react-icons/io5";
 import { ChangeEvent, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import DropdownMenu from "./DropdownMenu";
 import { IoPersonAddSharp } from "react-icons/io5";
 import { TiGroup } from "react-icons/ti";
@@ -12,86 +12,14 @@ import Contact from "./Contacts";
 import { FiCamera } from "react-icons/fi";
 import { RxCross2 } from "react-icons/rx";
 import { IoMdContact } from "react-icons/io";
+import { formatTimeWithAmPm } from "@/lib/utils";
 
 const ChatList = () => {
   const navigate = useNavigate();
+  const loaction = useLocation();
   const { user } = useAuth();
   const [isDropdownMenuOpen, setIsDropdownMenuOpen] = useState(false);
   const { id } = useParams();
-  const dummyData = [
-    {
-      id: 0,
-      isGroup: false,
-      groupName: "",
-      lastMessage: {
-        createdBy: "",
-        createdAt: "12:00 AM",
-        text: "",
-        img: "",
-        audio: "",
-        video: "",
-        gif: "",
-      },
-      createdBy: "Sam Wilson",
-      createdAt: "",
-      updatedAt: "",
-      unseenMsgCount: 0,
-    },
-    {
-      id: 1,
-      isGroup: true,
-      groupName: "Developers Studio",
-      lastMessage: {
-        createdBy: "Ryan Tompson",
-        createdAt: "10:00 PM",
-        text: "Good Night! See you soon",
-        img: "",
-        audio: "",
-        video: "",
-        gif: "",
-      },
-      createdBy: "",
-      createdAt: "",
-      updatedAt: "",
-      unseenMsgCount: 10,
-    },
-    {
-      id: 2,
-      isGroup: true,
-      groupName: "Web3 Developers",
-      lastMessage: {
-        createdBy: "Anna Johnson",
-        createdAt: "6:00 PM",
-        text: "Let's meet tomorrow",
-        img: "",
-        audio: "",
-        video: "",
-        gif: "",
-      },
-      createdBy: "",
-      createdAt: "",
-      updatedAt: "",
-      unseenMsgCount: 6,
-    },
-    {
-      id: 3,
-      isGroup: false,
-      groupName: "",
-      lastMessage: {
-        createdBy: "",
-        createdAt: "01:00 AM",
-        text: "How are you?",
-        img: "",
-        audio: "",
-        video: "",
-        gif: "",
-      },
-      createdBy: "Kevin Smith",
-      createdAt: "",
-      updatedAt: "",
-      unseenMsgCount: 0,
-    },
-  ];
   const [chats, setChats] = useState<Chat[]>([]);
   const getChats = async () => {
     try {
@@ -481,7 +409,13 @@ const ChatList = () => {
                     ? "flex items-center justify-between mb-2 cursor-pointer dark:bg-dark-tertiary bg-light-tertiary rounded-md p-2"
                     : "flex items-center justify-between mb-2 cursor-pointer rounded-md p-2 hover:dark:bg-dark-tertiary/50 hover:bg-light-tertiary/50"
                 }
-                onClick={() => navigate(`/chat/${chat.id}`)}
+                onClick={() =>
+                  loaction.pathname === "/"
+                    ? navigate(`/chat/${chat.id}`)
+                    : loaction.pathname === `/chat/${chat.id}`
+                    ? navigate(`/`)
+                    : navigate(`/chat/${chat.id}`)
+                }
               >
                 <img
                   src={chat?.groupProfilePic || ""}
@@ -493,16 +427,18 @@ const ChatList = () => {
                   <h4 className="font-bold text-sm">{chat?.groupName}</h4>
                   {chat.lastMessage && (
                     <p className="text-xs">
-                      <span>{chat.lastMessage?.createdBy + " : "}</span>
+                      <span>{chat.lastMessage?.creator?.name + " : "}</span>
                       <span>{chat.lastMessage?.text}</span>
                     </p>
                   )}
                 </div>
                 <div className="flex flex-col justify-center items-center">
-                  <p className="text-xs">{chat.lastMessage?.createdAt}</p>
-                  {chat.unseenMsgCount > 0 && (
+                  <p className="text-xs">
+                    {formatTimeWithAmPm(chat.lastMessage?.updatedAt as string)}
+                  </p>
+                  {chat.unseenCount > 0 && (
                     <p className="text-white bg-green-600 w-4 h-4 rounded-full flex justify-center items-center text-xs">
-                      {chat.unseenMsgCount}
+                      {chat.unseenCount}
                     </p>
                   )}
                 </div>
@@ -515,7 +451,13 @@ const ChatList = () => {
                     ? "flex items-center justify-between mb-2 cursor-pointer dark:bg-dark-tertiary bg-light-tertiary rounded-md p-2"
                     : "flex items-center justify-between mb-2 cursor-pointer rounded-md p-2 hover:dark:bg-dark-tertiary/50 hover:bg-light-tertiary/50"
                 }
-                onClick={() => navigate(`/chat/${chat.id}`)}
+                onClick={() =>
+                  loaction.pathname === "/"
+                    ? navigate(`/chat/${chat.id}`)
+                    : loaction.pathname === `/chat/${chat.id}`
+                    ? navigate(`/`)
+                    : navigate(`/chat/${chat.id}`)
+                }
               >
                 {chat.member?.profilePic ? (
                   <img
@@ -536,10 +478,12 @@ const ChatList = () => {
                   </div>
                 </div>
                 <div className="flex flex-col justify-center items-center">
-                  <p className="text-xs">{chat.lastMessage?.createdAt}</p>
-                  {chat.unseenMsgCount > 0 && (
+                  <p className="text-xs">
+                    {formatTimeWithAmPm(chat.lastMessage?.updatedAt as string)}
+                  </p>
+                  {chat.unseenCount > 0 && loaction.pathname === "/" && (
                     <p className="text-white bg-green-600 w-4 h-4 rounded-full flex justify-center items-center text-xs">
-                      {chat.unseenMsgCount}
+                      {chat.unseenCount}
                     </p>
                   )}
                 </div>

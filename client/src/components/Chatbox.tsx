@@ -3,25 +3,24 @@ import ChatBody from "./ChatBody";
 import ChatFooter from "./ChatFooter";
 import ChatHeader from "./ChatHeader";
 import Logo from "./svgs/Logo";
-import axiosInstance from "@/lib/axiosInstance";
 import { useAuth } from "@/context/AuthProvider";
 import { useSocket } from "@/context/SocketProvider";
 import Stream from "./Stream";
 import { useWebRTC } from "@/context/WebRTCProvider";
+import { Chat } from "@/lib/types";
+import { fetchData } from "@/lib/api";
 
 const Chatbox = ({ id }: { id: string | null }) => {
   const { user } = useAuth();
   const { joinRoom } = useSocket();
-    const { myStream, remoteStream } = useWebRTC();
+  const { myStream, remoteStream } = useWebRTC();
 
-  const [chatData, setChatData] = useState(null);
+  const [chatData, setChatData] = useState<Chat | null>(null);
 
   // get chat data
   const getChatData = async () => {
     try {
-      const { data } = await axiosInstance.get(
-        `/chat/${id}?userId=${user?.uid}`
-      );
+      const data = await fetchData<Chat>(`/chat/${id}?userId=${user?.uid}`);
       setChatData(data);
     } catch (error) {
       console.log("getChatData() ->>", error);
@@ -36,10 +35,7 @@ const Chatbox = ({ id }: { id: string | null }) => {
 
   return (
     <>
-      <Stream
-        myStream={myStream}
-        remoteStream={remoteStream}
-      />
+      <Stream myStream={myStream} remoteStream={remoteStream} />
       <div className="w-[70%] flex flex-col justify-between h-screen">
         {typeof id === "string" ? (
           <>

@@ -98,9 +98,6 @@ export const getChat = async (
       where: { id },
       include: {
         members: true,
-        messages: {
-          orderBy: { updatedAt: "desc" }, // Optional: Order messages by latest
-        },
       },
     });
 
@@ -128,7 +125,6 @@ export const getChat = async (
       groupName: chat.isGroup ? chat.groupName : null,
       groupProfilePic: chat.isGroup ? chat.groupProfilePic : null,
       member: chat.isGroup ? null : member, // Include member only if not a group chat
-      messages: chat.messages,
       createdBy: chat.createdBy,
       createdAt: chat.createdAt,
       updatedAt: chat.updatedAt,
@@ -164,11 +160,20 @@ export const getUserChats = async (
             id: true,
             text: true,
             createdAt: true,
-            createdBy: true,
+            updatedAt: true,
             image: true,
             audio: true,
             video: true,
             gif: true,
+            creator: {
+              // ✅ Fetch full user details from User table
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                profilePic: true,
+              },
+            },
           },
         },
         members: {
@@ -179,38 +184,44 @@ export const getUserChats = async (
             profilePic: true,
           },
         },
+        UserChatStatus: {
+          where: { userId: user.id },
+          select: { unseenCount: true },
+        },
       },
     });
 
-    // Transform chats to include members conditionally and new fields
+    // Transform chats to include members conditionally and unseen count
     const formattedChats = chats.map((chat) => {
+      const unseenCount =
+        chat.UserChatStatus.length > 0 ? chat.UserChatStatus[0].unseenCount : 0;
+
       if (chat.isGroup) {
-        // Exclude members for group chats
         return {
           id: chat.id,
           isGroup: chat.isGroup,
           groupName: chat.groupName,
           groupProfilePic: chat.groupProfilePic,
+          members: chat.members,
           createdBy: chat.createdBy,
           createdAt: chat.createdAt,
           updatedAt: chat.updatedAt,
-          unseenMsgCount: chat.unseenMsgCount,
           lastMessage: chat.lastMessage,
+          unseenCount,
         };
       } else {
-        // Include only the other member(s) for non-group chats
         const otherMembers = chat.members.filter(
           (member) => member.id !== user.id
         );
         return {
           id: chat.id,
           isGroup: chat.isGroup,
-          member: otherMembers.length > 0 ? otherMembers[0] : null, // Simplify to a single other member
+          member: otherMembers.length > 0 ? otherMembers[0] : null,
           createdBy: chat.createdBy,
           createdAt: chat.createdAt,
           updatedAt: chat.updatedAt,
-          unseenMsgCount: chat.unseenMsgCount,
           lastMessage: chat.lastMessage,
+          unseenCount,
         };
       }
     });

@@ -19,12 +19,11 @@ model User {
   updatedAt DateTime @updatedAt
 
   chats        Chat[]    @relation("UserChats")
-  messages     Message[] @relation("MessageCreatedBy") // Link messages created by the user
-  readMessages Message[] @relation("MessageReadBy") // Link messages read by the user
+  messages     Message[] @relation("MessageCreatedBy") // Messages created by the user
+  readMessages Message[] @relation("MessageReadBy") // Messages read by the user
   contacts     Contact[] @relation("ContactsCreatedBy") // Contacts created by the user
 
-  Contact Contact[]
-
+  Contact        Contact[]
   UserChatStatus UserChatStatus[]
 }
 

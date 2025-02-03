@@ -6,7 +6,6 @@ import {
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { User, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { isDate } from "util/types";
 
 export const saveUserData = async (user: User, name: string) => {
   try {
@@ -75,9 +74,9 @@ export const signOutUser = async () => {
 };
 
 // format time with am/pm
-export function formatTimeWithAmPm(timestamp: number) {
+export function formatTimeWithAmPm(timestamp: string) {
   // Parse the timestamp into a Date object
-  const date = new Date(Number(timestamp));
+  const date = new Date(timestamp);
 
   // Extract hours and minutes
   let hours = date.getHours();

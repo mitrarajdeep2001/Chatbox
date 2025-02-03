@@ -1,9 +1,8 @@
 import { Server, Socket } from "socket.io";
 import { pub, sub } from "./redis";
-import prisma from "./prisma";
 import { produceMessage } from "./kafka";
-import createMessage from "../helper/kafkaMessageHandlers"; // Example helper
 import { Message } from "../types";
+import { handleReadReceipt } from "../helper/kafkaMessageHandlers";
 
 interface SocketEventPayload {
   roomId: string;
@@ -26,12 +25,13 @@ class SocketService {
       cors: {
         allowedHeaders: ["*"],
         origin: "*",
-        methods: ["GET", "POST"],
+        methods: ["GET", "POST", "PUT", "DELETE"],
       },
     });
 
     // Subscribe to Redis channels
     sub.subscribe("MESSAGES");
+    sub.subscribe("READ_RECEIPT");
   }
 
   // Initialize all listeners
@@ -47,16 +47,7 @@ class SocketService {
       this.registerEvent(socket, "event:sendMessage", this.handleMessage);
       this.registerEvent(socket, "event:callUser", this.handleGenericEvents);
       this.registerEvent(socket, "event:answerCall", this.handleGenericEvents);
-      this.registerEvent(
-        socket,
-        "event:iceCandidate",
-        this.handleGenericEvents
-      );
-      this.registerEvent(
-        socket,
-        "event:negotiationNeeded",
-        this.handleGenericEvents
-      );
+      this.registerEvent(socket, "event:messageRead", this.handleGenericEvents);
 
       // Handle disconnection
       socket.on("disconnect", () => {
@@ -76,7 +67,7 @@ class SocketService {
   ): void {
     socket.on(eventName, async (payload) => {
       try {
-        console.log(`Event received: ${eventName}`, payload);
+        // console.log(`Event received: ${eventName}`, payload);
         // Handle the event using the provided handler
         if (eventName === "event:joinRoom") {
           await handler(socket, payload.roomId, "", payload);
@@ -86,16 +77,11 @@ class SocketService {
           await handler(socket, payload.roomId, "event:incomingCall", payload);
         } else if (eventName === "event:answerCall") {
           await handler(socket, payload.roomId, "event:callAccepted", payload);
-        } else if (eventName === "event:negotiationNeeded") {
-          await handler(socket, payload.roomId, "event:negotiate", payload);
-        } else if (eventName === "event:negotiate") {
-          await handler(socket, payload.roomId, "event:callAccepted", payload);
-        } else if (eventName === "event:iceCandidate") {
-          await handler(socket, payload.roomId, "event:iceCandidate", payload);
-        } 
+        } else if (eventName === "event:messageRead") {
+          await handler(socket, payload.roomId, "event:messageRead", payload);
+        }
       } catch (error) {
         console.error(`Error handling event "${eventName}":`, error);
-        // socket.emit("error", { event: eventName, error: error.message });
       }
     });
   }
@@ -103,18 +89,28 @@ class SocketService {
   // Redis subscriber for cross-instance message handling
   private initRedisListeners(): void {
     sub.on("message", async (channel: string, message: string) => {
+      console.log(`New Redis message for channel ${channel}:`, message);
+      
       if (channel === "MESSAGES") {
         const parsedMessage = JSON.parse(message) as Message;
 
-        const { chatId } = parsedMessage;
+        // const { chatId } = parsedMessage;
 
-        console.log(`New Redis message for room ${chatId}:`, message);
-
-        // Emit to the correct room
-        // this._io.to(chatId).emit("event:newMessage", message);
+        // console.log(`New Redis message for room ${chatId}:`, message);
 
         // Send message to Kafka for further processing
         await produceMessage("MESSAGES", message);
+      } else if (channel === "READ_RECEIPT") {
+        const parsedMessage = JSON.parse(message);
+
+        const { roomId } = parsedMessage;
+
+        console.log(`New Redis read receipt for room ${roomId}:`, message);
+
+        // Send message to Kafka for further processing
+        // await produceMessage("READ_RECEIPT", message);
+
+        handleReadReceipt(message);
       }
     });
   }
@@ -137,7 +133,7 @@ class SocketService {
     event: string,
     payload: any
   ): Promise<void> {
-    console.log(`New message for room ${payload.chatId}:`, payload);
+    // console.log(`New message for room ${payload.chatId}:`, payload);
     socket.to(payload.chatId).emit(event, payload);
     // Publish to Redis for cross-instance communication
     await pub.publish("MESSAGES", JSON.stringify(payload));
@@ -150,9 +146,15 @@ class SocketService {
     event: string,
     payload: any
   ): Promise<void> {
-    console.log(`New event (${event}) for room ${roomId}:`, payload);
+    // console.log(`New event (${event}) for room ${roomId}:`, payload);
 
     socket.to(roomId).emit(event, { ...payload, from: socket.id });
+    // Publish to Redis for cross-instance communication
+    if (event === "event:messageRead") {
+      console.log("Publishing read receipt to Redis...");
+      
+      await pub.publish("READ_RECEIPT", JSON.stringify(payload));
+    }
   }
 
   // Getter for the server instance

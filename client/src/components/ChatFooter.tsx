@@ -6,7 +6,6 @@ import { useParams } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { useSocket } from "@/context/SocketProvider"; // Assuming you have a socket provider
 import { useAuth } from "@/context/AuthProvider"; // Assuming you have an auth provider
-import { useApi, useLocalState } from "@/lib/hooks";
 import EmojiPicker from "./EmojiePicker";
 import AttachmentMenu from "./AttachmentMenu";
 import { MdAudioFile, MdGifBox, MdImage } from "react-icons/md";
@@ -18,31 +17,23 @@ import MediaPreview from "./MediaPreview";
 import { IoMdSend } from "react-icons/io";
 import { IoSendOutline } from "react-icons/io5";
 import TypingBoxWithMic from "./TypingBoxWithMic";
+import { Message } from "@/lib/types";
+import { useGeneralContext } from "@/context/GeneralProvider";
+import ReplyPreview from "./ReplyPreview";
 
 const ChatFooter = ({ chatData }: { chatData: object | null }) => {
-  const { setState } = useLocalState("message");
+  const { setGlobalMessageState, globalMessageState, setShowReplyPreview } = useGeneralContext();
   const { id: chatId } = useParams(); // Chat ID from route params
   const { user } = useAuth(); // Access user info from the auth context
   const { emitEvent } = useSocket(); // Access emitEvent function from the socket context
-  // const { data } = useApi(
-  //   "GET",
-  //   "/misc/emojies",
-  //   {},
-  //   {},
-  //   {
-  //     staleTime: 6 * 24 * 60 * 60 * 1000, // Data is fresh for 6 days
-  //     gcTime: 7 * 24 * 60 * 60 * 1000, // Data is kept in cache for 7 days
-  //     // refetchOnWindowFocus: false,
-  //     queryKey: ["emojies"],
-  //   }
-  // );
 
-  const [message, setMessage] = useState({
-    chatId: chatId || "", // Foreign key to the Chat table
+  const [message, setMessage] = useState<Message>({
+    id: "", // Unique message ID
+    chatId: "", // Foreign key to the Chat table
     createdBy: user?.uid || "", // User ID of the message creator
-    createdAt: Date.now(), // Timestamp of message creation
+    createdAt: Date.now().toLocaleString(), // Timestamp of message creation
+    updatedAt: Date.now().toLocaleString(), // Timestamp of message update
     text: "", // Message text
-    emojie: "", // Optional emoji
     image: "", // Optional image URL
     audio: "", // Optional audio URL
     video: "", // Optional video URL
@@ -122,6 +113,11 @@ const ChatFooter = ({ chatData }: { chatData: object | null }) => {
   const updateMessage = (key: string, value: string) => {
     setMessage((prev) => ({
       ...prev,
+      id: Date.now().toString(),
+      chatId: chatId as string,
+      repliedToId: globalMessageState?.id || null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       [key]: value,
     }));
   };
@@ -129,16 +125,16 @@ const ChatFooter = ({ chatData }: { chatData: object | null }) => {
   // Function to send the message
   const sendMessage = () => {
     if (
-      !message.text.trim() &&
+      !message.text?.trim() &&
       !message.image &&
       !message.audio &&
       !message.video &&
-      !message.gif.trim()
+      !message.gif?.trim()
     )
       return; // Prevent sending empty messages
 
     // Set the message state
-    setState(message);
+    setGlobalMessageState(message);
 
     // Emit the message event
     emitEvent("event:sendMessage", message);
@@ -156,6 +152,7 @@ const ChatFooter = ({ chatData }: { chatData: object | null }) => {
     // Reset the media preview & media
     setMediaPreview("");
     setMedia(null);
+    setShowReplyPreview(false);
   };
 
   return (
@@ -198,7 +195,7 @@ const ChatFooter = ({ chatData }: { chatData: object | null }) => {
         }}
       />
       {/* Chat footer */}
-      <div className="h-[7%] w-full flex justify-between items-center p-5 dark:bg-dark-primary bg-light-primary">
+      <div className=" w-full flex justify-between items-center p-2 dark:bg-dark-primary bg-light-primary">
         <div className="flex items-center relative">
           <Button onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
             <FaRegSmile />
@@ -207,11 +204,15 @@ const ChatFooter = ({ chatData }: { chatData: object | null }) => {
             <GrAttachment />
           </Button>
         </div>
-        <TypingBoxWithMic
-          message={message}
-          updateMessage={updateMessage}
-          sendMessage={sendMessage}
-        />
+        <div className="w-full">
+          {/* Reply Preview */}
+          <ReplyPreview />
+          <TypingBoxWithMic
+            message={message}
+            updateMessage={updateMessage}
+            sendMessage={sendMessage}
+          />
+        </div>
       </div>
     </>
   );

@@ -6,14 +6,19 @@ export type Member = {
 };
 
 export type Message = {
+  id: string;
   chatId: string;
-  createdBy: string;
-  createdAt: number;
+  creator: Member;
+  updatedAt: string;
+  createdAt: string;
   text?: string | null;
   image?: string | null;
   audio?: string | null;
   video?: string | null;
   gif?: string | null;
+  status?: "sent" | "delivered" | "read";
+  repliedToId?: string | null;
+  repliedTo?: Message | null;
 };
 
 export type Chat = {
@@ -23,7 +28,7 @@ export type Chat = {
   groupProfilePic?: string | null;
   member?: Member;
   lastMessage?: Message | null;
-  unseenMsgCount: number;
+  unseenCount: number;
   createdBy: string;
   createdAt: string;
   updatedAt: string;

@@ -1,6 +1,6 @@
 import { Kafka, Producer } from "kafkajs";
 import dotenv from "dotenv";
-import createMessage from "../helper/kafkaMessageHandlers";
+import {createMessage, handleReadReceipt} from "../helper/kafkaMessageHandlers";
 dotenv.config();
 
 const kafka = new Kafka({
@@ -44,7 +44,11 @@ export const consumeMessages = async (topics: string[]) => {
         partition,
       });
       if (topic === "MESSAGES") {
+        // Handle message
         await createMessage(message.value?.toString() as string);
+      } else if (topic === "READ_RECEIPT") {
+        // Handle read receipt
+        await handleReadReceipt(message.value?.toString() as string);
       }
     },
   });
