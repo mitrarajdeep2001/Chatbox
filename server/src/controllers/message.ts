@@ -18,7 +18,7 @@ export const getMessagesByChat = async (req: Request, res: Response) => {
   try {
     const messages = await prisma.message.findMany({
       where: { chatId },
-      orderBy: { createdAt: "desc" }, // Fetch newest messages first
+      orderBy: { updatedAt: "desc" }, // Fetch newest messages first
       skip: offset,
       take: limitNumber,
       include: {

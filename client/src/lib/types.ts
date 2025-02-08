@@ -8,17 +8,19 @@ export type Member = {
 export type Message = {
   id: string;
   chatId: string;
-  creator: Member;
+  createdBy: string;
+  creator?: Member;
   updatedAt: string;
   createdAt: string;
   text?: string | null;
-  image?: string | null;
+  image?: string;
   audio?: string | null;
   video?: string | null;
   gif?: string | null;
   status?: "sent" | "delivered" | "read";
   repliedToId?: string | null;
   repliedTo?: Message | null;
+  isReplyPreview?: boolean;
 };
 
 export type Chat = {

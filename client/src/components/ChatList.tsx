@@ -127,7 +127,7 @@ const ChatList = () => {
   };
 
   // handle group profile image upload
-  const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleMediaUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const dataUri = URL.createObjectURL(file);
@@ -317,7 +317,7 @@ const ChatList = () => {
                 <input
                   className="absolute inset-0 opacity-0 cursor-pointer"
                   type="file"
-                  onChange={handleImageUpload}
+                  onChange={handleMediaUpload}
                 />
               </div>
               {!imagePreview ? (
@@ -433,9 +433,9 @@ const ChatList = () => {
                   )}
                 </div>
                 <div className="flex flex-col justify-center items-center">
-                  <p className="text-xs">
+                  {chat.lastMessage?.updatedAt && <p className="text-xs">
                     {formatTimeWithAmPm(chat.lastMessage?.updatedAt as string)}
-                  </p>
+                  </p>}
                   {chat.unseenCount > 0 && (
                     <p className="text-white bg-green-600 w-4 h-4 rounded-full flex justify-center items-center text-xs">
                       {chat.unseenCount}

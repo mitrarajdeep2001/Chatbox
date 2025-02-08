@@ -1,28 +1,26 @@
-import { Button } from "@mui/material";
-import { FaRegSmile } from "react-icons/fa";
-import { GrAttachment } from "react-icons/gr";
-import { FiMic } from "react-icons/fi";
-import { useParams } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
-import { useSocket } from "@/context/SocketProvider"; // Assuming you have a socket provider
 import { useAuth } from "@/context/AuthProvider"; // Assuming you have an auth provider
-import EmojiPicker from "./EmojiePicker";
-import AttachmentMenu from "./AttachmentMenu";
-import { MdAudioFile, MdGifBox, MdImage } from "react-icons/md";
-import { FaFileVideo } from "react-icons/fa6";
-import GifPicker from "./GifPicker";
-import { formatTime, getMediaFileDataUri } from "@/lib/utils";
-import { RxCrossCircled } from "react-icons/rx";
-import MediaPreview from "./MediaPreview";
-import { IoMdSend } from "react-icons/io";
-import { IoSendOutline } from "react-icons/io5";
-import TypingBoxWithMic from "./TypingBoxWithMic";
-import { Message } from "@/lib/types";
 import { useGeneralContext } from "@/context/GeneralProvider";
+import { useSocket } from "@/context/SocketProvider"; // Assuming you have a socket provider
+import { Message } from "@/lib/types";
+import { getMediaFileDataUri } from "@/lib/utils";
+import { Button } from "@mui/material";
+import { useState } from "react";
+import { FaRegSmile } from "react-icons/fa";
+import { FaFileVideo } from "react-icons/fa6";
+import { GrAttachment } from "react-icons/gr";
+import { MdAudioFile, MdGifBox, MdImage } from "react-icons/md";
+import { useParams } from "react-router-dom";
+import AttachmentMenu from "./AttachmentMenu";
+import EmojiPicker from "./EmojiePicker";
+import GifPicker from "./GifPicker";
+import MediaPreview from "./MediaPreview";
 import ReplyPreview from "./ReplyPreview";
+import TypingBoxWithMic from "./TypingBoxWithMic";
+import { createData, deleteData } from "@/lib/api";
 
 const ChatFooter = ({ chatData }: { chatData: object | null }) => {
-  const { setGlobalMessageState, globalMessageState, setShowReplyPreview } = useGeneralContext();
+  const { setGlobalMessageState, globalMessageState, setShowReplyPreview } =
+    useGeneralContext();
   const { id: chatId } = useParams(); // Chat ID from route params
   const { user } = useAuth(); // Access user info from the auth context
   const { emitEvent } = useSocket(); // Access emitEvent function from the socket context
@@ -30,7 +28,7 @@ const ChatFooter = ({ chatData }: { chatData: object | null }) => {
   const [message, setMessage] = useState<Message>({
     id: "", // Unique message ID
     chatId: "", // Foreign key to the Chat table
-    createdBy: user?.uid || "", // User ID of the message creator
+    createdBy: user?.uid as string, // Foreign key to the User table
     createdAt: Date.now().toLocaleString(), // Timestamp of message creation
     updatedAt: Date.now().toLocaleString(), // Timestamp of message update
     text: "", // Message text
@@ -44,6 +42,7 @@ const ChatFooter = ({ chatData }: { chatData: object | null }) => {
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [mediaPreview, setMediaPreview] = useState("");
   const [media, setMedia] = useState<File | null>(null);
+  const [uploadedMedia, setUploadedMedia] = useState<{ public_id: string; url: string } | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   // Handle opening the attachment menu
@@ -66,7 +65,14 @@ const ChatFooter = ({ chatData }: { chatData: object | null }) => {
       const dataUri = await getMediaFileDataUri(file);
       setMedia(file);
       setMediaPreview(dataUri);
-      updateMessage(file.type.split("/")[0], dataUri);
+      // Create a new FormData instance
+      const formData = new FormData();
+      formData.append("media", file);
+      const {media} = await createData("misc/upload/media", formData) as any;
+      setUploadedMedia(media);
+      console.log(file.type.split("/")[0], media.secure_url);
+      
+      updateMessage(file.type.split("/")[0], media.secure_url);
       setShowAttachmentMenu(false);
       setAnchorEl(null);
     }
@@ -110,7 +116,10 @@ const ChatFooter = ({ chatData }: { chatData: object | null }) => {
   };
 
   // Function to handle message field updates
-  const updateMessage = (key: string, value: string) => {
+  const updateMessage = (
+    key: string,
+    value: string
+  ) => {
     setMessage((prev) => ({
       ...prev,
       id: Date.now().toString(),
@@ -121,6 +130,7 @@ const ChatFooter = ({ chatData }: { chatData: object | null }) => {
       [key]: value,
     }));
   };
+  console.log(message, "message");
 
   // Function to send the message
   const sendMessage = () => {
@@ -134,7 +144,7 @@ const ChatFooter = ({ chatData }: { chatData: object | null }) => {
       return; // Prevent sending empty messages
 
     // Set the message state
-    setGlobalMessageState(message);
+    setGlobalMessageState({...message, isReplyPreview: false});
 
     // Emit the message event
     emitEvent("event:sendMessage", message);
@@ -153,6 +163,13 @@ const ChatFooter = ({ chatData }: { chatData: object | null }) => {
     setMediaPreview("");
     setMedia(null);
     setShowReplyPreview(false);
+  };
+
+  // Function to close the media preview
+  const handleClose = async () => {
+    setMediaPreview("");
+    setMedia(new File([], "") as any | null);
+    uploadedMedia && await deleteData(`misc/delete/media?public_id=${uploadedMedia.public_id}`);
   };
 
   return (
@@ -189,10 +206,7 @@ const ChatFooter = ({ chatData }: { chatData: object | null }) => {
       <MediaPreview
         mediaSrc={mediaPreview}
         mediaType={media?.type.split("/")[0] as any}
-        onClose={() => {
-          setMediaPreview("");
-          setMedia(new File([], "") as any | null);
-        }}
+        onClose={handleClose}
       />
       {/* Chat footer */}
       <div className=" w-full flex justify-between items-center p-2 dark:bg-dark-primary bg-light-primary">

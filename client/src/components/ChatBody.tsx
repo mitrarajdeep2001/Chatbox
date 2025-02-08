@@ -87,7 +87,7 @@ const ChatBody = ({ chatData }: { chatData: Chat | null }) => {
       </p>
       {messages.length > 0
         ? messages.map((message, index) => (
-            <MessageBody key={index} message={message} />
+            !message.isReplyPreview &&<MessageBody key={index} message={message} />
           ))
         : null}
     </div>

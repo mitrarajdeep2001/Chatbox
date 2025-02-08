@@ -25,7 +25,7 @@ const MessageBody = ({ message }: { message: Message }) => {
 
   // Handle read event
   const handleRead = () => {
-    if (message.creator?.id !== user?.uid) {
+    if (message.createdBy !== user?.uid) {
       emitEvent("event:messageRead", {
         messageId: message.id,
         roomId: message.chatId,
@@ -50,11 +50,13 @@ const MessageBody = ({ message }: { message: Message }) => {
       setMessageStatus("read");
       setReadMessages((prev) => new Set(prev).add(data.messageId));
     });
-  }, []);
+
+    messageRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [message]);
 
   const handleReply = () => {
     setShowReplyPreview(true);
-    setGlobalMessageState(message);
+    setGlobalMessageState({...message, isReplyPreview: true});
   }
 
   return (
@@ -65,7 +67,7 @@ const MessageBody = ({ message }: { message: Message }) => {
           ? "min-w-[25%]"
           : "min-w-[20%]"
       } max-w-[60%] flex items-center justify-end gap-2 cursor-default relative ${
-        message.creator?.id === user?.uid
+        message.createdBy === user?.uid
           ? "self-end"
           : "self-start flex-row-reverse"
       }`}
@@ -91,25 +93,25 @@ const MessageBody = ({ message }: { message: Message }) => {
               {message.repliedTo?.text}
             </p>
             {/* Media Content */}
-            {(message.image || message.gif) && (
+            {(message.repliedTo?.image || message.repliedTo?.gif) && (
               <img
                 className="rounded-md max-h-32 w-full"
-                src={message.image || message.gif || ""}
+                src={message.repliedTo?.image || message.repliedTo?.gif || ""}
                 alt=""
               />
             )}
-            {message.audio && (
+            {message.repliedTo?.audio && (
               <audio
                 className="rounded-md max-h-32 w-full"
                 controls
-                src={message.audio}
+                src={message.repliedTo.audio}
               />
             )}
-            {message.video && (
+            {message.repliedTo?.video && (
               <video
                 className="rounded-md max-h-32 w-full"
                 controls
-                src={message.video}
+                src={message.repliedTo.video}
               />
             )}
           </div>
@@ -151,7 +153,7 @@ const MessageBody = ({ message }: { message: Message }) => {
               {formatTimeWithAmPm(message.updatedAt)}
             </p>
             {/* Status Icons */}
-            {message.creator?.id === user?.uid &&
+            {message.createdBy === user?.uid &&
               (messageStatus === "sent" ? (
                 <DoneIcon sx={{ fontSize: 15, color: "grey !important" }} />
               ) : messageStatus === "delivered" ? (

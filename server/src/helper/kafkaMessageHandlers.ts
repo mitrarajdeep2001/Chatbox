@@ -1,5 +1,6 @@
 import prisma from "../services/prisma";
 import { Message } from "../types";
+import { imageUploadUtil } from "./cloudinary";
 
 // Create message from Kafka event
 export const createMessage = async (message: string) => {
@@ -57,7 +58,6 @@ export const createMessage = async (message: string) => {
         return;
       }
     }
-
     // 3️⃣ Create the new message
     const newMessage = await prisma.message.create({
       data: {
@@ -80,7 +80,7 @@ export const createMessage = async (message: string) => {
     // 4️⃣ Update the lastMessageId in the Chat table
     await prisma.chat.update({
       where: { id: chatId },
-      data: { lastMessageId: newMessage.id },
+      data: { lastMessageId: newMessage.id, updatedAt: new Date().toISOString() },
     });
 
     // 5️⃣ Get all members except the sender
@@ -111,8 +111,6 @@ export const createMessage = async (message: string) => {
     console.error("❌ Error creating message:", error);
   }
 };
-
-
 
 // Update message status to 'read' and decrement unseen count
 export const handleReadReceipt = async (message: string) => {
@@ -192,4 +190,3 @@ export const handleReadReceipt = async (message: string) => {
     console.log("Error updating read receipt:", error);
   }
 };
-

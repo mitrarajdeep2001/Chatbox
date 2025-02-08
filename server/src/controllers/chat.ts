@@ -1,7 +1,7 @@
 // controllers/chatController.js
 import { Request, Response } from "express";
 import prisma from "../services/prisma";
-import { handleImageUpload } from "../helper/cloudinary";
+import { handleMediaUpload } from "../helper/cloudinary";
 import { UploadApiResponse } from "cloudinary";
 
 // create chat
@@ -63,7 +63,7 @@ export const createChat = async (
 
     let profilePic = null;
     if (req.file) {
-      profilePic = (await handleImageUpload(req.file)) as UploadApiResponse;
+      profilePic = (await handleMediaUpload(req.file)) as UploadApiResponse;
     }
     // Create chat with the retrieved user IDs
     const chat = await prisma.chat.create({
@@ -154,6 +154,7 @@ export const getUserChats = async (
       where: {
         members: { some: { id: user.id } },
       },
+      orderBy: { updatedAt: "desc" }, // Fetch newest chat first
       include: {
         lastMessage: {
           select: {

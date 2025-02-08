@@ -19,7 +19,7 @@ async function imageUploadUtil(file: string) {
   return result;
 }
 
-const handleImageUpload = async (file: { buffer: any; mimetype: string }) => {
+const handleMediaUpload = async (file: { buffer: any; mimetype: string }) => {
   try {
     const b64 = Buffer.from(file.buffer).toString("base64");
     const url = "data:" + file.mimetype + ";base64," + b64;
@@ -30,5 +30,13 @@ const handleImageUpload = async (file: { buffer: any; mimetype: string }) => {
     console.log(error);
   }
 };
+
+const handleDeleteMedia = async (public_id: string) => {
+  try {
+    await cloudinary.uploader.destroy(public_id);
+} catch (error) {
+    console.log(error);
+  }
+}
 const upload = multer({ storage });
-export { upload, handleImageUpload };
+export { upload, handleMediaUpload, imageUploadUtil, handleDeleteMedia };

@@ -35,3 +35,23 @@ export const useIntersectionObserver = (
 
   return targetRef;
 };
+
+export const useUserInteraction = (callback: () => void) => {
+  useEffect(() => {
+    const handleUserInteraction = () => {
+      callback();
+    };
+
+    // Attach event listeners for user interactions
+    document.addEventListener("click", handleUserInteraction);
+    document.addEventListener("keydown", handleUserInteraction);
+    document.addEventListener("mousemove", handleUserInteraction);
+
+    // Cleanup event listeners when the component unmounts
+    return () => {
+      document.removeEventListener("click", handleUserInteraction);
+      document.removeEventListener("keydown", handleUserInteraction);
+      document.removeEventListener("mousemove", handleUserInteraction);
+    };
+  }, [callback]);
+};
